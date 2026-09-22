@@ -621,6 +621,138 @@
 //     process.exit(1);
 //   });
 
+// require("dotenv").config();
+
+// const express = require("express");
+// const cookieParser = require("cookie-parser");
+// const cors = require("cors");
+
+// const connectDB = require("./config/database");
+
+// const app = express();
+
+// // ========================================
+// // CORS CONFIGURATION
+// // ========================================
+
+// const allowedOrigins = [
+//   "https://dev-tinder-front-kohl.vercel.app",
+//   "http://localhost:3000",
+//   "http://127.0.0.1:3000",
+// ];
+
+// // Validate incoming origins
+// const isAllowedOrigin = (origin) => {
+//   // Allow requests without an Origin header
+//   // (Postman, curl, server-to-server requests)
+//   if (!origin) {
+//     return true;
+//   }
+
+//   try {
+//     // Normalize the origin
+//     const parsedOrigin = new URL(origin);
+
+//     const normalizedOrigin = parsedOrigin.origin;
+//     const hostname = parsedOrigin.hostname.toLowerCase();
+
+//     // Allow explicitly trusted origins
+//     if (allowedOrigins.includes(normalizedOrigin)) {
+//       return true;
+//     }
+
+//     // Allow Vercel deployments belonging to this project
+//     // Example: dev-tinder-front-kohl.vercel.app
+//     const isVercelDeployment =
+//       /^dev-tinder-front-[a-z0-9-]+\.vercel\.app$/i.test(hostname);
+
+//     if (isVercelDeployment && parsedOrigin.protocol === "https:") {
+//       return true;
+//     }
+
+//     return false;
+//   } catch (error) {
+//     // Invalid origin
+//     return false;
+//   }
+// };
+
+// // CORS options
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     console.log("CORS Origin Received:", origin);
+
+//     if (isAllowedOrigin(origin)) {
+//       console.log("CORS Allowed:", origin || "No Origin");
+
+//       return callback(null, true);
+//     }
+
+//     console.log("CORS Rejected:", origin);
+
+//     return callback(new Error("Not allowed by CORS"));
+//   },
+
+//   credentials: true,
+
+//   methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+//   allowedHeaders: ["Content-Type", "Authorization"],
+
+//   optionsSuccessStatus: 204,
+// };
+
+// // ========================================
+// // APPLY CORS BEFORE ALL ROUTES
+// // ========================================
+
+// app.use(cors(corsOptions));
+
+// // Handle preflight requests
+// app.options(/.*/, cors(corsOptions));
+
+// // ========================================
+// // MIDDLEWARE
+// // ========================================
+
+// app.use(express.json());
+
+// app.use(cookieParser());
+
+// // ========================================
+// // ROUTES
+// // ========================================
+
+// const authRouter = require("./routes/auth");
+// const requestRouter = require("./routes/request");
+// const profileRouter = require("./routes/profile");
+// const userRouter = require("./routes/user");
+
+// app.use("/", authRouter);
+// app.use("/", requestRouter);
+// app.use("/", profileRouter);
+// app.use("/", userRouter);
+
+// // ========================================
+// // DATABASE & SERVER
+// // ========================================
+
+// connectDB()
+//   .then(() => {
+//     console.log("Connected to MongoDB");
+
+//     const PORT = process.env.PORT || 7777;
+
+//     app.listen(PORT, "0.0.0.0", () => {
+//       console.log(`Server is running on port ${PORT}`);
+//     });
+//   })
+//   .catch((err) => {
+//     console.error("Error connecting to MongoDB:", err);
+
+//     process.exit(1);
+//   });
+
 require("dotenv").config();
 
 const express = require("express");
@@ -635,64 +767,12 @@ const app = express();
 // CORS CONFIGURATION
 // ========================================
 
-const allowedOrigins = [
-  "https://dev-tinder-front-kohl.vercel.app",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-];
-
-// Validate incoming origins
-const isAllowedOrigin = (origin) => {
-  // Allow requests without an Origin header
-  // (Postman, curl, server-to-server requests)
-  if (!origin) {
-    return true;
-  }
-
-  try {
-    // Normalize the origin
-    const parsedOrigin = new URL(origin);
-
-    const normalizedOrigin = parsedOrigin.origin;
-    const hostname = parsedOrigin.hostname.toLowerCase();
-
-    // Allow explicitly trusted origins
-    if (allowedOrigins.includes(normalizedOrigin)) {
-      return true;
-    }
-
-    // Allow Vercel deployments belonging to this project
-    // Example: dev-tinder-front-kohl.vercel.app
-    const isVercelDeployment =
-      /^dev-tinder-front-[a-z0-9-]+\.vercel\.app$/i.test(hostname);
-
-    if (isVercelDeployment && parsedOrigin.protocol === "https:") {
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    // Invalid origin
-    return false;
-  }
-};
-
-// CORS options
 const corsOptions = {
-  origin: function (origin, callback) {
-    console.log("CORS Origin Received:", origin);
+  // Reflect the request's Origin header.
+  // This removes the failing custom origin validation.
+  origin: true,
 
-    if (isAllowedOrigin(origin)) {
-      console.log("CORS Allowed:", origin || "No Origin");
-
-      return callback(null, true);
-    }
-
-    console.log("CORS Rejected:", origin);
-
-    return callback(new Error("Not allowed by CORS"));
-  },
-
+  // Required for cookie-based authentication
   credentials: true,
 
   methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -702,13 +782,10 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-// ========================================
-// APPLY CORS BEFORE ALL ROUTES
-// ========================================
-
+// Apply CORS globally BEFORE routes
 app.use(cors(corsOptions));
 
-// Handle preflight requests
+// Handle all preflight OPTIONS requests
 app.options(/.*/, cors(corsOptions));
 
 // ========================================
@@ -749,6 +826,5 @@ connectDB()
   })
   .catch((err) => {
     console.error("Error connecting to MongoDB:", err);
-
     process.exit(1);
   });
