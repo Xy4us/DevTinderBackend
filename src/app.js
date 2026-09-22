@@ -52,7 +52,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://dev-tinder-front-kohl.vercel.app",
+      "https://devtinderbackend-production.up.railway.app",
     ],
     credentials: true,
   }),
