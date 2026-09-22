@@ -412,6 +412,99 @@
 //     process.exit(1);
 //   });
 
+// require("dotenv").config();
+
+// const express = require("express");
+// const cookieParser = require("cookie-parser");
+// const cors = require("cors");
+
+// const connectDB = require("./config/database");
+
+// const app = express();
+
+// // =====================================
+// // CORS CONFIGURATION
+// // =====================================
+
+// const allowedOrigins = [
+//   "http://localhost:3000",
+//   "https://dev-tinder-front-kohl.vercel.app",
+// ];
+
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     console.log("CORS Incoming Origin:", JSON.stringify(origin));
+
+//     // Allow requests without an Origin header (Postman, curl)
+//     if (!origin) {
+//       return callback(null, true);
+//     }
+
+//     // Check whether the frontend origin is allowed
+//     if (allowedOrigins.includes(origin)) {
+//       console.log("CORS Allowed:", origin);
+//       return callback(null, true);
+//     }
+
+//     // Reject origins not on the allowlist
+//     console.log("CORS Blocked:", origin);
+
+//     return callback(new Error("Not allowed by CORS"));
+//   },
+
+//   credentials: true,
+
+//   methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+//   allowedHeaders: ["Content-Type", "Authorization"],
+
+//   optionsSuccessStatus: 204,
+// };
+
+// // Apply CORS globally BEFORE routes
+// app.use(cors(corsOptions));
+
+// // =====================================
+// // MIDDLEWARE
+// // =====================================
+
+// app.use(express.json());
+
+// app.use(cookieParser());
+
+// // =====================================
+// // ROUTES
+// // =====================================
+
+// const authRouter = require("./routes/auth");
+// const requestRouter = require("./routes/request");
+// const profileRouter = require("./routes/profile");
+// const userRouter = require("./routes/user");
+
+// app.use("/", authRouter);
+// app.use("/", requestRouter);
+// app.use("/", profileRouter);
+// app.use("/", userRouter);
+
+// // =====================================
+// // DATABASE & SERVER
+// // =====================================
+
+// connectDB()
+//   .then(() => {
+//     console.log("Connected to MongoDB");
+
+//     const PORT = process.env.PORT || 7777;
+
+//     app.listen(PORT, "0.0.0.0", () => {
+//       console.log(`Server is running on port ${PORT}`);
+//     });
+//   })
+//   .catch((err) => {
+//     console.error("Error connecting to MongoDB:", err);
+//     process.exit(1);
+//   });
+
 require("dotenv").config();
 
 const express = require("express");
@@ -422,9 +515,9 @@ const connectDB = require("./config/database");
 
 const app = express();
 
-// =====================================
+// ========================================
 // CORS CONFIGURATION
-// =====================================
+// ========================================
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -432,24 +525,41 @@ const allowedOrigins = [
 ];
 
 const corsOptions = {
-  origin: function (origin, callback) {
-    console.log("CORS Incoming Origin:", JSON.stringify(origin));
+  origin: (origin, callback) => {
+    console.log("CORS Origin Received:", JSON.stringify(origin));
 
-    // Allow requests without an Origin header (Postman, curl)
+    // Allow requests without an Origin header (Postman, etc.)
     if (!origin) {
       return callback(null, true);
     }
 
-    // Check whether the frontend origin is allowed
-    if (allowedOrigins.includes(origin)) {
+    // Allow explicitly listed frontend origins
+    if (allowedOrigins.includes(origin.trim())) {
       console.log("CORS Allowed:", origin);
       return callback(null, true);
     }
 
-    // Reject origins not on the allowlist
-    console.log("CORS Blocked:", origin);
+    // Allow Vercel preview deployments for this frontend project
+    let hostname = "";
 
-    return callback(new Error("Not allowed by CORS"));
+    try {
+      hostname = new URL(origin).hostname;
+    } catch (error) {
+      console.log("Invalid Origin:", origin);
+      return callback(null, false);
+    }
+
+    const isAllowedVercelPreview =
+      /^dev-tinder-front-[a-z0-9-]+\.vercel\.app$/i.test(hostname);
+
+    if (isAllowedVercelPreview) {
+      console.log("Vercel Preview Allowed:", origin);
+      return callback(null, true);
+    }
+
+    console.log("CORS Rejected:", origin);
+
+    return callback(null, false);
   },
 
   credentials: true,
@@ -461,20 +571,26 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-// Apply CORS globally BEFORE routes
+// ========================================
+// APPLY CORS BEFORE ALL ROUTES
+// ========================================
+
 app.use(cors(corsOptions));
 
-// =====================================
+// Handle preflight requests
+app.options(/.*/, cors(corsOptions));
+
+// ========================================
 // MIDDLEWARE
-// =====================================
+// ========================================
 
 app.use(express.json());
 
 app.use(cookieParser());
 
-// =====================================
+// ========================================
 // ROUTES
-// =====================================
+// ========================================
 
 const authRouter = require("./routes/auth");
 const requestRouter = require("./routes/request");
@@ -486,9 +602,9 @@ app.use("/", requestRouter);
 app.use("/", profileRouter);
 app.use("/", userRouter);
 
-// =====================================
+// ========================================
 // DATABASE & SERVER
-// =====================================
+// ========================================
 
 connectDB()
   .then(() => {
