@@ -156,13 +156,31 @@ const cors = require("cors");
 
 const app = express();
 
-// CORS Configuration
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://dev-tinder-front-kohl.vercel.app",
+];
+
 const corsOptions = {
-  origin: ["http://localhost:3000", "https://dev-tinder-front-kohl.vercel.app"],
+  origin: function (origin, callback) {
+    console.log("Incoming Origin:", origin);
+
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("Blocked Origin:", origin);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+
   credentials: true,
+
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-// Apply CORS middleware
+// IMPORTANT: This must be before your routes
 app.use(cors(corsOptions));
 
 // Middleware to parse JSON bodies
