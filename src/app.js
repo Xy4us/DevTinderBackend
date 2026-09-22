@@ -55,8 +55,13 @@ app.use(
       "https://dev-tinder-front-kohl.vercel.app",
     ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
+// Explicitly handle preflight requests
+app.options(/.*/, cors(corsOptions));
 
 // Middleware to parse JSON bodies
 app.use(express.json());
