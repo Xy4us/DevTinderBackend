@@ -216,12 +216,105 @@
 //     process.exit(1);
 //   });
 
+// require("dotenv").config();
+
+// const express = require("express");
+// const connectDB = require("./config/database");
+// const cookieParser = require("cookie-parser");
+// const cors = require("cors");
+
+// const app = express();
+
+// // ===============================
+// // CORS CONFIGURATION
+// // ===============================
+
+// const allowedOrigins = [
+//   "http://localhost:3000",
+//   "https://dev-tinder-front-kohl.vercel.app",
+// ];
+
+// const corsOptions = {
+//   origin: (origin, callback) => {
+//     console.log("Incoming Origin:", origin);
+
+//     // Allow requests without an Origin (e.g. Postman)
+//     if (!origin) {
+//       return callback(null, true);
+//     }
+
+//     // Remove trailing slashes and whitespace
+//     const normalizedOrigin = origin.trim().replace(/\/+$/, "");
+
+//     // Allow only trusted frontend origins
+//     if (allowedOrigins.includes(normalizedOrigin)) {
+//       return callback(null, true);
+//     }
+
+//     console.log("Blocked Origin:", normalizedOrigin);
+
+//     // Do not throw an error that causes a 500 response
+//     return callback(null, false);
+//   },
+
+//   credentials: true,
+
+//   methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+//   allowedHeaders: ["Content-Type", "Authorization"],
+// };
+
+// // Apply CORS before routes
+// app.use(cors(corsOptions));
+
+// // ===============================
+// // MIDDLEWARE
+// // ===============================
+
+// app.use(express.json());
+
+// app.use(cookieParser());
+
+// // ===============================
+// // ROUTES
+// // ===============================
+
+// const authRouter = require("./routes/auth");
+// const requestRouter = require("./routes/request");
+// const profileRouter = require("./routes/profile");
+// const userRouter = require("./routes/user");
+
+// app.use("/", authRouter);
+// app.use("/", requestRouter);
+// app.use("/", profileRouter);
+// app.use("/", userRouter);
+
+// // ===============================
+// // CONNECT DATABASE & START SERVER
+// // ===============================
+
+// connectDB()
+//   .then(() => {
+//     console.log("Connected to MongoDB");
+
+//     const PORT = process.env.PORT || 7777;
+
+//     app.listen(PORT, "0.0.0.0", () => {
+//       console.log(`Server is running on port ${PORT}`);
+//     });
+//   })
+//   .catch((err) => {
+//     console.error("Error connecting to MongoDB:", err);
+//     process.exit(1);
+//   });
+
 require("dotenv").config();
 
 const express = require("express");
-const connectDB = require("./config/database");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+
+const connectDB = require("./config/database");
 
 const app = express();
 
@@ -235,25 +328,31 @@ const allowedOrigins = [
 ];
 
 const corsOptions = {
-  origin: (origin, callback) => {
+  origin: function (origin, callback) {
     console.log("Incoming Origin:", origin);
 
-    // Allow requests without an Origin (e.g. Postman)
+    // Allow requests without an Origin header
+    // (Postman, curl, server-to-server requests)
     if (!origin) {
       return callback(null, true);
     }
 
-    // Remove trailing slashes and whitespace
-    const normalizedOrigin = origin.trim().replace(/\/+$/, "");
-
-    // Allow only trusted frontend origins
-    if (allowedOrigins.includes(normalizedOrigin)) {
+    // Allow exact production and local frontend origins
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
-    console.log("Blocked Origin:", normalizedOrigin);
+    // Allow Vercel preview deployments for this project
+    const isVercelPreview =
+      /^https:\/\/dev-tinder-front-[a-z0-9-]+\.vercel\.app$/i.test(origin);
 
-    // Do not throw an error that causes a 500 response
+    if (isVercelPreview) {
+      return callback(null, true);
+    }
+
+    console.log("Blocked Origin:", origin);
+
+    // Reject unauthorized origins without throwing an error
     return callback(null, false);
   },
 
@@ -262,10 +361,15 @@ const corsOptions = {
   methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 
   allowedHeaders: ["Content-Type", "Authorization"],
+
+  optionsSuccessStatus: 204,
 };
 
-// Apply CORS before routes
+// Apply CORS BEFORE routes
 app.use(cors(corsOptions));
+
+// Explicitly handle preflight requests
+app.options(/.*/, cors(corsOptions));
 
 // ===============================
 // MIDDLEWARE
@@ -290,7 +394,7 @@ app.use("/", profileRouter);
 app.use("/", userRouter);
 
 // ===============================
-// CONNECT DATABASE & START SERVER
+// DATABASE & SERVER
 // ===============================
 
 connectDB()
