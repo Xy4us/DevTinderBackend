@@ -767,12 +767,28 @@ const app = express();
 // CORS CONFIGURATION
 // ========================================
 
-const corsOptions = {
-  // Reflect the request's Origin header.
-  // This removes the failing custom origin validation.
-  origin: true,
+const allowedOrigins = [
+  "https://dev-tinder-frontend-kohl.vercel.app",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
 
-  // Required for cookie-based authentication
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (Postman, curl, server-to-server)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Block all other origins
+    return callback(new Error("Not allowed by CORS: " + origin));
+  },
+
+  // Required for cross-origin cookie-based authentication
   credentials: true,
 
   methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

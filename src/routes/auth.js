@@ -72,8 +72,18 @@ authRouter.post("/login", async (req, res) => {
       //Create a JWT token
       const token = await user.getJWT();
 
-      //Add the token to cokkie and send the response back to the user
-      res.cookie("token", token, { maxAge: 30 * 24 * 60 * 60 * 1000 }); //30 days
+      // Cross-origin cookie settings:
+      // - sameSite: "none"  → required for cookies to be sent on cross-origin requests
+      //   (Vercel frontend → Railway backend are different domains)
+      // - secure: true      → required whenever sameSite is "none" (HTTPS only)
+      // - httpOnly: true    → prevents JS access to the token (XSS protection)
+      const isProduction = process.env.NODE_ENV === "production";
+      res.cookie("token", token, {
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        httpOnly: true,
+        sameSite: isProduction ? "none" : "lax",
+        secure: isProduction,
+      });
 
       res.json({
         message: "Login successful!",
@@ -90,7 +100,12 @@ authRouter.post("/login", async (req, res) => {
 //logout API
 authRouter.post("/logout", async (req, res) => {
   try {
-    res.clearCookie("token");
+    const isProduction = process.env.NODE_ENV === "production";
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction,
+    });
     res.send("Logout successful!");
   } catch (err) {
     res.status(400).send("Logout failed! " + err.message);
